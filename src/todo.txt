@@ -1,0 +1,7 @@
+OBJ loader, multiple and complex objects rendered
+
+materials and reflections
+
+move objects independently (shadows)
+
+basic collision detection

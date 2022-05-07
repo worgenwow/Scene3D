@@ -1,0 +1,4 @@
+newmtl cube
+map_Kd container2.png
+map_Ks container2_specular.png
+Ns 32.000000

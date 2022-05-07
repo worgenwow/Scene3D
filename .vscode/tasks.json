@@ -1,0 +1,66 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "shell",
+			"label": "buildSDL2",
+			"command": "g++.exe",
+			"args": [
+				"-g",
+				"src\\*.cpp",
+				"-o",
+				"build\\scene.exe",
+				"-ID:/libraryGLEW/include",
+				"-I${workspaceFolder}/include",
+				"-LD:/libraryGLEW/lib",
+				"-lmingw32",
+				"-lfreeglut",
+				"-lopengl32",
+				"-lglu32",
+				"-lglew32",
+				"-mwindows"
+			],
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			}
+		},
+		{
+			"type": "shell",
+			"label": "debugSDL2",
+			"command": "g++.exe",
+			"args": [
+				"-g",
+				"src\\*.cpp",
+				"-o",
+				"build\\scene.exe",
+				"-ID:/libraryGLEW/include",
+				"-I${workspaceFolder}/include",
+				"-LD:/libraryGLEW/lib",
+				"-lmingw32",
+				"-lfreeglut",
+				"-lopengl32",
+				"-lglu32",
+				"-lglew32",
+				"-mwindows",
+				"-mconsole"
+			],
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			}
+		}
+	]
+}

@@ -7,7 +7,7 @@
 Camera::Camera() : 
 mCameraSpeed(3),
 mWorldUp(glm::vec3(0.0f, 1.0f,  0.0f)),
-mAngleChange(4 * M_PI/180),
+mAngleChange(8 * M_PI/180),
 mAngleBound(89 * M_PI/180) {
   mPosition   = glm::vec3(0.0f, 0.0f,  3.0f);
   mFrontVector = glm::vec3(0.0f, 0.0f, -1.0f);

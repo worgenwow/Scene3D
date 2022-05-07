@@ -9,7 +9,7 @@
 #include <model.h>
 
 struct Data {
-  static const int shaderCount  = 3;
+  static const int shaderCount  = 2;
 
   Shader *shaders[shaderCount] = {};
 

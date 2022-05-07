@@ -90,11 +90,12 @@ void renderScene(void *data) {
   // get time in seconds
   float time = glutGet(GLUT_ELAPSED_TIME)/1000.f;
 
-  glm::vec3 lightPosition = glm::vec3(1*sin(time), 0.0f, 1*cos(time));
+  float radius = (1+sin(time/10));
+  glm::vec3 lightPosition = glm::vec3(radius*sin(time), 0.0f, radius*cos(time));
 
   LightProps lightProps;
   lightProps.specular = glm::vec3(1.0f, 1.0f, 1.0f);
-  lightProps.diffuse = lightProps.specular * glm::vec3(0.7f);
+  lightProps.diffuse = lightProps.specular;
   lightProps.ambient = lightProps.diffuse * glm::vec3(0.1f);
 
   LightDropOff lightDropOff;
@@ -137,34 +138,29 @@ void renderScene(void *data) {
     glm::vec3( 2.0f,  0.0f,  0.0f)
   };
 
-  // draw the objects
-  for(int i=0;i<1;i++) {
-    glm::mat4 model = glm::mat4(1.0f);
-    model = glm::translate(model, cubePositions[i]);
-    float angle = 20.0f * i; 
-    model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
+  // // draw the objects
+  // for(int i=0;i<1;i++) {
+  //   glm::mat4 model = glm::mat4(1.0f);
+  //   model = glm::translate(model, cubePositions[i]);
+  //   float angle = 20.0f * i; 
+  //   model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
 
-    // calculate the normal matrix for correcting normal vector after any transformations
-    glm::mat3 normalMatrix = glm::transpose(glm::inverse(glm::mat3(model)));
+  //   // calculate the normal matrix for correcting normal vector after any transformations
+  //   glm::mat3 normalMatrix = glm::transpose(glm::inverse(glm::mat3(model)));
 
-    d->shaders[d->OBJECT]->setMat4("model", model);
-    d->shaders[d->OBJECT]->setMat3("normalMatrix", normalMatrix);
-    d->cube.draw(d->shaders[d->OBJECT]);
-  }
+  //   d->shaders[d->OBJECT]->setMat4("model", model);
+  //   d->shaders[d->OBJECT]->setMat3("normalMatrix", normalMatrix);
+  //   d->cube.draw(d->shaders[d->OBJECT]);
+  // }
 
   glm::mat4 backpackModel = glm::mat4(1.0f);
   backpackModel = glm::scale(backpackModel, glm::vec3(0.4f));
+  glm::mat3 backpackNormalMatrix = glm::transpose(glm::inverse(glm::mat3(backpackModel)));
 
-  d->shaders[2]->use();
-  d->shaders[2]->setMat4("projection", d->proj);
-  d->shaders[2]->setMat4("view", view);
-  d->shaders[2]->setMat4("model", backpackModel);
-  d->shaders[2]->setVec3("viewPos", spotlight.position);
-  d->shaders[2]->setSpotlight("spotlight", spotlight);
-  d->shaders[2]->setDirLight("dirLight", dirLight);
-  d->shaders[2]->setPointLight("pointLight", pointLight);
+  d->shaders[d->OBJECT]->setMat4("model", backpackModel);
+  d->shaders[d->OBJECT]->setMat3("normalMatrix", backpackNormalMatrix);
 
-  d->backpack.draw(d->shaders[2]);
+  d->backpack.draw(d->shaders[d->OBJECT]);
 
   // move light to position and make it smaller
   glm::mat4 lightModel = glm::mat4(1.0f);
@@ -348,7 +344,6 @@ void mouseClick(int button, int state, int x, int y, void *data) {
 void createShaders(Data *d) {
   d->shaders[d->OBJECT]       = new Shader("./shaders/object.vs", "./shaders/backpack.fs");
   d->shaders[d->LIGHT_SOURCE] = new Shader("./shaders/object.vs", "./shaders/light_source.fs");
-  d->shaders[2]               = new Shader("./shaders/object.vs", "./shaders/simple.fs");
 }
 
 void loadObjects(Data *d) {

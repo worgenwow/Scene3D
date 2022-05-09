@@ -3,10 +3,13 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <glm/gtx/norm.hpp>
 
 #include <stdio.h>
 #include <stdarg.h>
 #include <math.h>
+#include <map>
+#include <vector>
 
 #include <model.h>
 #include <objLoader.h>
@@ -68,8 +71,13 @@ int main(int argc, char **argv) {
   loadObjects(&data);
   setGlutCallbacks(&data);
 
-  glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+  glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
   glEnable(GL_DEPTH_TEST);
+  glDepthFunc(GL_LESS);
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+  glEnable(GL_CULL_FACE);
+
   glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_GLUTMAINLOOP_RETURNS);
 
   // enter the glut event processing cycle
@@ -90,92 +98,60 @@ void renderScene(void *data) {
   // get time in seconds
   float time = glutGet(GLUT_ELAPSED_TIME)/1000.f;
 
-  float radius = (1+sin(time/10));
-  glm::vec3 lightPosition = glm::vec3(radius*sin(time), 0.0f, radius*cos(time));
-
-  LightProps lightProps;
-  lightProps.specular = glm::vec3(1.0f, 1.0f, 1.0f);
-  lightProps.diffuse = lightProps.specular;
-  lightProps.ambient = lightProps.diffuse * glm::vec3(0.1f);
-
-  LightDropOff lightDropOff;
-  lightDropOff.constant = 1.0f;
-  lightDropOff.linear = 0.09f;
-  lightDropOff.quadratic = 0.032f;
-
-  PointLight pointLight;
-  pointLight.lightProps = lightProps;
-  pointLight.lightDropOff = lightDropOff;
-  pointLight.position = lightPosition;
-
-  DirLight dirLight;
-  dirLight.direction = glm::vec3(-0.2f, -1.0f, -0.3f);
-  dirLight.lightProps = lightProps;
-
-  // dim the dirlight
-  dirLight.lightProps.specular *= glm::vec3(0.1f);
-  dirLight.lightProps.diffuse *= glm::vec3(0.1f);
-  dirLight.lightProps.ambient *= glm::vec3(0.1f);
-
-  Spotlight spotlight;
-  spotlight.lightProps = lightProps;
-  spotlight.lightDropOff = lightDropOff;
-  spotlight.cutOff = cos(12.5f*M_PI/180);
-  spotlight.outerCutOff = cos(17.5f*M_PI/180);
-  spotlight.position = d->camera.getPosition();
-  spotlight.direction = d->camera.getFrontVector();
-
   // set all the uniform variables for the object
   d->shaders[d->OBJECT]->use();
   d->shaders[d->OBJECT]->setMat4("projection", d->proj);
   d->shaders[d->OBJECT]->setMat4("view", view);
-  d->shaders[d->OBJECT]->setVec3("viewPos", spotlight.position);
-  d->shaders[d->OBJECT]->setSpotlight("spotlight", spotlight);
-  d->shaders[d->OBJECT]->setDirLight("dirLight", dirLight);
-  d->shaders[d->OBJECT]->setPointLight("pointLight", pointLight);
+
+  glm::mat4 planeModel = glm::mat4(1.0f);
+  glm::mat3 planeNormalMat = glm::transpose(glm::inverse(glm::mat3(planeModel)));
+  d->shaders[d->OBJECT]->setMat4("model", planeModel);
+  d->shaders[d->OBJECT]->setMat3("normalMatrix", planeNormalMat);
+  d->plane.draw(d->shaders[d->OBJECT]);
 
   glm::vec3 cubePositions[] = {
-    glm::vec3( 2.0f,  0.0f,  0.0f)
+    glm::vec3(-1.0f, 0.0f, -1.0f),
+    glm::vec3(2.0f, 0.0f, 0.0f)
   };
+  
+  // draw the objects
+  for(int i=0;i<2;i++) {
+    glm::mat4 model = glm::mat4(1.0f);
+    model = glm::translate(model, cubePositions[i]);
 
-  // // draw the objects
-  // for(int i=0;i<1;i++) {
-  //   glm::mat4 model = glm::mat4(1.0f);
-  //   model = glm::translate(model, cubePositions[i]);
-  //   float angle = 20.0f * i; 
-  //   model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
+    // calculate the normal matrix for correcting normal vector after any transformations
+    glm::mat3 normalMatrix = glm::transpose(glm::inverse(glm::mat3(model)));
 
-  //   // calculate the normal matrix for correcting normal vector after any transformations
-  //   glm::mat3 normalMatrix = glm::transpose(glm::inverse(glm::mat3(model)));
+    d->shaders[d->OBJECT]->setMat4("model", model);
+    d->shaders[d->OBJECT]->setMat3("normalMatrix", normalMatrix);
+    d->cube.draw(d->shaders[d->OBJECT]);
+  }
 
-  //   d->shaders[d->OBJECT]->setMat4("model", model);
-  //   d->shaders[d->OBJECT]->setMat3("normalMatrix", normalMatrix);
-  //   d->cube.draw(d->shaders[d->OBJECT]);
-  // }
+  std::vector<glm::vec3> quadPositions;
+  quadPositions.push_back(glm::vec3(-1.5f, 0.0f, -0.48f));
+  quadPositions.push_back(glm::vec3( 1.5f, 0.0f,  0.51f));
+  quadPositions.push_back(glm::vec3( 0.0f, 0.0f,  0.7f));
+  quadPositions.push_back(glm::vec3(-0.3f, 0.0f, -2.3f));
+  quadPositions.push_back(glm::vec3( 0.5f, 0.0f, -0.6f));
 
-  glm::mat4 backpackModel = glm::mat4(1.0f);
-  backpackModel = glm::scale(backpackModel, glm::vec3(0.4f));
-  glm::mat3 backpackNormalMatrix = glm::transpose(glm::inverse(glm::mat3(backpackModel)));
+  std::map<float, glm::vec3> sorted;
+  glm::vec3 cameraPos = d->camera.getPosition();
+  for(unsigned int i=0; i < quadPositions.size(); i++) {
+    float distance = glm::length2(cameraPos - quadPositions[i]);
+    sorted[distance] = quadPositions[i];
+  }
+  
+  for(std::map<float, glm::vec3>::reverse_iterator it = sorted.rbegin(); it!=sorted.rend(); ++it) {
+    glm::mat4 model = glm::mat4(1.0f);
+    model = glm::translate(model, it->second);
 
-  d->shaders[d->OBJECT]->setMat4("model", backpackModel);
-  d->shaders[d->OBJECT]->setMat3("normalMatrix", backpackNormalMatrix);
+    // calculate the normal matrix for correcting normal vector after any transformations
+    glm::mat3 normalMatrix = glm::transpose(glm::inverse(glm::mat3(model)));
 
-  d->backpack.draw(d->shaders[d->OBJECT]);
-
-  // move light to position and make it smaller
-  glm::mat4 lightModel = glm::mat4(1.0f);
-  lightModel = glm::translate(lightModel, lightPosition);
-  lightModel = glm::scale(lightModel, glm::vec3(0.2f)); 
-
-  // sets all the uniform variables for the light
-  d->shaders[d->LIGHT_SOURCE]->use();
-  d->shaders[d->LIGHT_SOURCE]->setMat4("projection", d->proj);
-  d->shaders[d->LIGHT_SOURCE]->setMat4("view", view);
-  d->shaders[d->LIGHT_SOURCE]->setMat4("model", lightModel);
-  d->shaders[d->LIGHT_SOURCE]->setVec3("lightColor",  pointLight.lightProps.specular);
-
-  // draw the light source
-  d->cube.draw(d->shaders[d->LIGHT_SOURCE]);
+    d->shaders[d->OBJECT]->setMat4("model", model);
+    d->shaders[d->OBJECT]->setMat3("normalMatrix", normalMatrix);
+    d->quad.draw(d->shaders[d->OBJECT]);
+  }
 
   // show drawn buffer to screen
   glutSwapBuffers();
@@ -278,7 +254,7 @@ void changeSize(int w, int h, void *data) {
   d->screenHeight = h;
   d->screenWidth  = w;
 
-  glViewport(0, 0, w, h);             // sets viewport to be entire window
+  glViewport(0, 0, w, h); // sets viewport to be entire window
   d->proj = glm::perspective(glm::radians(45.f), ratio, 0.1f, 100.0f); // sets the perspective
 }
 
@@ -342,12 +318,12 @@ void mouseClick(int button, int state, int x, int y, void *data) {
 }
 
 void createShaders(Data *d) {
-  d->shaders[d->OBJECT]       = new Shader("./shaders/object.vs", "./shaders/backpack.fs");
-  d->shaders[d->LIGHT_SOURCE] = new Shader("./shaders/object.vs", "./shaders/light_source.fs");
+  d->shaders[d->OBJECT] = new Shader("./shaders/object.vs", "./shaders/simple.fs");
 }
 
 void loadObjects(Data *d) {
   ObjLoader loader;
-  loader.loadObj("./objects/backpack/backpack.obj", d->backpack);
+  loader.loadObj("./objects/plane/plane.obj", d->plane);
   loader.loadObj("./objects/cube/cube.obj", d->cube);
+  loader.loadObj("./objects/quad/quad.obj", d->quad);
 }

@@ -1,6 +1,6 @@
 obj loader                            - DONE
 
-multiple and complex objects rendered - 
+multiple and complex objects rendered - DONE
 
 materials and reflections             - 
 

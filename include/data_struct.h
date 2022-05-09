@@ -9,13 +9,12 @@
 #include <model.h>
 
 struct Data {
-  static const int shaderCount  = 2;
+  static const int shaderCount  = 1;
 
   Shader *shaders[shaderCount] = {};
 
-  enum index{
-    OBJECT,
-    LIGHT_SOURCE
+  enum shader_index{
+    OBJECT
   };
 
   glm::mat4 proj = glm::mat4(1.0f);
@@ -29,11 +28,14 @@ struct Data {
   
   Camera camera;
   KeyData keyData;
+
+  Model plane;
   Model cube;
+  Model quad;
   Model backpack;
 
   ~Data() {
-    for(int i=0;i++;i<shaderCount) {
+    for(int i=0;i < shaderCount;i++) {
       delete shaders[i];
     }
   }

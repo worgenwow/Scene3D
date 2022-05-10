@@ -155,7 +155,7 @@ bool ObjLoader::loadObj(std::ifstream *fileStream, const std::string &directory,
 void ObjLoader::addMesh(std::vector<glm::vec3> &positions, std::vector<glm::vec3> &normals,
                         std::vector<glm::vec2> &textureCoords, std::vector<Face> &faces, Model &model,
                         Material &material, std::vector<Texture> &textures) {
-  if(positions.empty() || normals.empty() || textureCoords.empty() || faces.empty()) return;
+  if((positions.empty() && normals.empty() && textureCoords.empty()) || faces.empty()) return;
   
   std::vector<Vertex> vertices;
   std::vector<GLuint> indices;

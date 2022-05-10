@@ -1,5 +1,4 @@
 #include <model.h>
-#include <imageLib.h>
 #include <stdio.h>
 
 Model::Model() {}
@@ -53,7 +52,7 @@ Texture Model::textureFromFile(const std::string &path) {
   texture.path = path;
 
   int width, height, nrChannels;
-  unsigned char *data = stbi_load(path.c_str(), &width, &height, &nrChannels, 0);
+  unsigned char *data = ImageLoader::loadImage(path.c_str(), &width, &height, &nrChannels);
 
   GLenum format;
   if(nrChannels == 3) {
@@ -77,7 +76,7 @@ Texture Model::textureFromFile(const std::string &path) {
   } else {
     printf("Failed to load texture");
   }
-  stbi_image_free(data);
+  ImageLoader::freeImage(data);
 
   return texture;
 }

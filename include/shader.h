@@ -5,19 +5,22 @@
 
 class Shader {
   private:
-    GLuint ID;
+    GLuint mID;
 
     // error printing
     void printShaderLog(GLuint shader) const;
     void printProgramLog(GLuint program) const;
-  
-  public:
+
     // creates program from shaders given
+    void createShader(const char *vertexPath, const char *fragmentPath, const char *geometryPath, bool useGeoShader);
+  public:
+    Shader(const char *vertexPath, const char *fragmentPath, const char *geometryPath);
     Shader(const char *vertexPath, const char *fragmentPath);
 
     // sets program as active
     void use();
 
+    void bindUniformBlock(const char *name, const unsigned int binding);
     // shader uniform functions
     void setBool(const GLchar *name, bool value) const;
     void setInt(const GLchar *name, int value) const;

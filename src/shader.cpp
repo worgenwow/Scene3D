@@ -58,38 +58,74 @@ void Shader::printProgramLog(GLuint program) const {
 	}
 }
 
+Shader::Shader(const char *vertexPath, const char *fragmentPath, const char *geometryPath) {
+  createShader(vertexPath, fragmentPath, geometryPath, true);
+}
+
 Shader::Shader(const char *vertexPath, const char *fragmentPath) {
+  createShader(vertexPath, fragmentPath, "", false);
+}
+
+void Shader::createShader(const char *vertexPath, const char *fragmentPath, const char *geometryPath, bool useGeoShader) {
   std::string vertexCode;
   std::string fragmentCode;
+  std::string geometryCode;
   std::ifstream vShaderFile;
   std::ifstream fShaderFile;
+  std::ifstream gShaderFile;
 
   vShaderFile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
   fShaderFile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+  gShaderFile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
   try {
     // open the files
     vShaderFile.open(vertexPath);
     fShaderFile.open(fragmentPath);
-    std::stringstream vShaderStream, fShaderStream;
+    if(useGeoShader)
+      gShaderFile.open(geometryPath);
+    std::stringstream vShaderStream, fShaderStream, gShaderStream;
 
     // read the files buffer into the string streams
     vShaderStream << vShaderFile.rdbuf();
     fShaderStream << fShaderFile.rdbuf();
+    if(useGeoShader)
+      gShaderStream << gShaderFile.rdbuf();
 
     // close the file handlers
     vShaderFile.close();
     fShaderFile.close();
+    if(useGeoShader)
+      gShaderFile.close();
 
     // convert the stream into a string
     vertexCode   = vShaderStream.str();
     fragmentCode = fShaderStream.str();
+    if(useGeoShader)
+      geometryCode = gShaderStream.str();
   } catch(std::ifstream::failure e) {
     std::cout << "ERROR::SHADER::FILE_NOT_SUCCESFULLY_READ: " << e.what() << std::endl;
   }
 
   const GLchar *vShaderCode = vertexCode.c_str();
   const GLchar *fShaderCode = fragmentCode.c_str();
-  GLuint vShader, fShader;
+  const GLchar *gShaderCode;
+  if(useGeoShader)
+    gShaderCode = geometryCode.c_str();
+  GLuint vShader, fShader, gShader;
+
+  if(useGeoShader) {
+    // compiling geometry shader
+    gShader = glCreateShader(GL_GEOMETRY_SHADER);
+    glShaderSource(gShader, 1, &gShaderCode, NULL);
+    glCompileShader(gShader);
+
+    GLint gShaderCompiled = GL_FALSE;
+    glGetShaderiv(gShader, GL_COMPILE_STATUS, &gShaderCompiled);
+    if(gShaderCompiled != GL_TRUE) {
+      std::cout << "ERROR::SHADER::COMPILATION_FAILED of GEOMETRY" << std::endl;
+      printShaderLog(gShader);
+    }
+  }
 
   // compiling vertex shader
   vShader = glCreateShader(GL_VERTEX_SHADER);
@@ -116,57 +152,66 @@ Shader::Shader(const char *vertexPath, const char *fragmentPath) {
   }
 
   // linking shader program
-  ID = glCreateProgram();
-  glAttachShader(ID, vShader);
-  glAttachShader(ID, fShader);
-  glLinkProgram(ID);
+  mID = glCreateProgram();
+  glAttachShader(mID, vShader);
+  glAttachShader(mID, fShader);
+  if(useGeoShader)
+    glAttachShader(mID, gShader);
+  glLinkProgram(mID);
 
   GLint programLinked = GL_FALSE;
-  glGetProgramiv(ID, GL_LINK_STATUS, &programLinked);
+  glGetProgramiv(mID, GL_LINK_STATUS, &programLinked);
   if(programLinked != GL_TRUE) {
     std::cout << "ERROR::SHADER::PROGRAM::LINKING_FAILED" << std::endl;
-    printProgramLog(ID);
+    printProgramLog(mID);
   }
 
   glDeleteShader(vShader);
   glDeleteShader(fShader);
+  if(useGeoShader)
+    glDeleteShader(gShader);
 }
 
 void Shader::use() {
-  glUseProgram(ID);
+  glUseProgram(mID);
+}
+
+void Shader::bindUniformBlock(const char *name, const unsigned int binding) {
+  GLuint index = glGetUniformBlockIndex(mID, name);
+  glUniformBlockBinding(mID, index, binding);
 }
 
 // shader uniform functions
 void Shader::setBool(const GLchar *name, bool value) const {
-  glUniform1i(glGetUniformLocation(ID, name), (int)value);
+  glUniform1i(glGetUniformLocation(mID, name), (int)value);
 }
 
 void Shader::setInt(const GLchar *name, int value) const {
-  glUniform1i(glGetUniformLocation(ID, name), value);
+  glUniform1i(glGetUniformLocation(mID, name), value);
 }
 
 void Shader::setFloat(const GLchar *name, float value) const {
-  glUniform1f(glGetUniformLocation(ID, name), value);
+  glUniform1f(glGetUniformLocation(mID, name), value);
 }
 
 void Shader::setMat3(const GLchar *name, glm::mat3 &value) const {
-  glUniformMatrix3fv(glGetUniformLocation(ID, name), 1, GL_FALSE, glm::value_ptr(value));
+  glUniformMatrix3fv(glGetUniformLocation(mID, name), 1, GL_FALSE, glm::value_ptr(value));
 }
 
 void Shader::setMat4(const GLchar *name, glm::mat4 &value) const {
-  glUniformMatrix4fv(glGetUniformLocation(ID, name), 1, GL_FALSE, glm::value_ptr(value));
+  glUniformMatrix4fv(glGetUniformLocation(mID, name), 1, GL_FALSE, glm::value_ptr(value));
 }
 
 void Shader::setVec3(const GLchar *name, glm::vec3 &value) const {
-  glUniform3fv(glGetUniformLocation(ID, name), 1, &value[0]);
+  glUniform3fv(glGetUniformLocation(mID, name), 1, &value[0]);
 }
 
 void Shader::setVec3(const GLchar *name, float x, float y, float z) const {
-  glUniform3f(glGetUniformLocation(ID, name), x, y, z);
+  glUniform3f(glGetUniformLocation(mID, name), x, y, z);
 }
 
 void Shader::setVec4(const GLchar *name, glm::vec4 &value) const {
-  glUniform4fv(glGetUniformLocation(ID, name), 1, &value[0]);
+  glUniform4fv(glGetUniformLocation(mID, name), 1, &value[0]);
 }
 
 void Shader::setLightDropOff(const GLchar *name, LightDropOff &value) const {

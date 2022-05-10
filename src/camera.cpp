@@ -16,6 +16,11 @@ mAngleBound(89 * M_PI/180) {
   mPitch = 0;
 }
 
+void Camera::flipDirection(bool flip) {
+  mFlipped = flip;
+  updateVectors();
+}
+
 // moves the camera round
 void Camera::updatePos(KeyData *keyData, float deltaTime) {
   if(keyData->wKeyDown) {
@@ -63,7 +68,8 @@ glm::mat4 Camera::getViewMatrix() {
 
 void Camera::updateVectors() {
   mFrontVector = glm::vec3(cos(mYaw) * cos(mPitch), sin(mPitch), sin(mYaw) * cos(mPitch));
-  mFrontVector = glm::normalize(mFrontVector);
+  int flip = mFlipped ? -1 : 1;
+  mFrontVector = glm::vec3(flip) * glm::normalize(mFrontVector);
 
   mRightVector = glm::normalize(glm::cross(mFrontVector, mWorldUp));
   mUpVector = glm::normalize(glm::cross(mRightVector, mFrontVector));

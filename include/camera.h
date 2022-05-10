@@ -13,6 +13,8 @@ class Camera {
     const float mCameraSpeed;
     const float mAngleChange;
     const float mAngleBound;
+    
+    bool mFlipped = false;
 
     float mYaw;
     float mPitch;
@@ -20,6 +22,8 @@ class Camera {
     void updateVectors();
   public:
     Camera();
+
+    void flipDirection(bool flip);
 
     void updatePos(KeyData *keyData, float deltaTime);
     void updateAngle(glm::vec2 *mouseChange, float deltaTime);

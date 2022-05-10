@@ -1,9 +1,13 @@
 obj loader                            - DONE
 
-multiple and complex objects rendered - DONE
+complex objects rendered              - DONE
 
-materials and reflections             - 
+multiple objects rendered             -
+
+reflections                           - DONE
+
+materials                             - ?
 
 move objects independently (shadows)  - 
 
-basic collision detection             - 
+basic collision detection (AABB)      - 

@@ -2,6 +2,7 @@
 #include <mesh.h>
 #include <vector>
 #include <obj_loader_structs.h>
+#include <imageLoader.h>
 
 class Model {
   private:

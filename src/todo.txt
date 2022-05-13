@@ -1,8 +1,10 @@
 obj loader                            - DONE
 
+replace maths library                 - DONE
+
 complex objects rendered              - DONE
 
-multiple objects rendered             -
+multiple objects rendered             - DONE
 
 reflections                           - DONE
 

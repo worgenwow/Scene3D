@@ -14,6 +14,10 @@ class Model {
     Model();
 
     void addMesh(Mesh mesh);
+
+    void enableInstancing(oglm::vec3 *array, unsigned int arraySize);
+
     void draw(Shader *shader);
+    void drawInstanced(Shader *shader, unsigned int amount);
     std::vector<Texture> loadTextures(TextureMTL &textureMTL);
 };

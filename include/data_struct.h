@@ -1,6 +1,5 @@
 #pragma once
 #include <GL/glew.h>
-#include <glm/glm.hpp>
 #include <math.h>
 
 #include <shader.h>
@@ -21,6 +20,7 @@ struct Data {
 
   bool wireframe = false;
 
+  GLuint instanceVBO;
   GLuint framebuffers[1];
   GLuint RBOs[1];
   GLuint textureColorBuffers[1];
@@ -28,9 +28,9 @@ struct Data {
   GLuint skyboxVAO;
   GLuint matricesUBO;
 
-  glm::mat4 proj = glm::mat4(1.0f);
+  oglm::mat4 proj = oglm::mat4(1.0f);
   
-  glm::vec2 mouseChange = glm::vec2(0,0);
+  oglm::vec2 mouseChange = oglm::vec2(0,0);
   bool mouse1Down = false;
 
   float previousTime = 0.0f;

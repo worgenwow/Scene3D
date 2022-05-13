@@ -1,16 +1,14 @@
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-
 #include <camera.h>
 #include <math.h>
+#include <openglMaths.h>
 
 Camera::Camera() : 
 mCameraSpeed(3),
-mWorldUp(glm::vec3(0.0f, 1.0f,  0.0f)),
+mWorldUp(oglm::vec3(0.0f, 1.0f,  0.0f)),
 mAngleChange(8 * M_PI/180),
 mAngleBound(89 * M_PI/180) {
-  mPosition   = glm::vec3(0.0f, 0.0f,  3.0f);
-  mFrontVector = glm::vec3(0.0f, 0.0f, -1.0f);
+  mPosition   = oglm::vec3(0.0f, 0.0f,  3.0f);
+  mFrontVector = oglm::vec3(0.0f, 0.0f, -1.0f);
 
   mYaw = -M_PI/2;
   mPitch = 0;
@@ -44,7 +42,7 @@ void Camera::updatePos(KeyData *keyData, float deltaTime) {
 }
 
 // rotates the camera
-void Camera::updateAngle(glm::vec2 *mouseChange, float deltaTime) {
+void Camera::updateAngle(oglm::vec2 *mouseChange, float deltaTime) {
   mYaw   += mouseChange->x * mAngleChange * deltaTime;
   mPitch -= mouseChange->y * mAngleChange * deltaTime;
 
@@ -55,11 +53,11 @@ void Camera::updateAngle(glm::vec2 *mouseChange, float deltaTime) {
   }
 }
 
-glm::mat4 Camera::getViewMatrix() {
-  glm::mat4 view;
+oglm::mat4 Camera::getViewMatrix() {
+  oglm::mat4 view;
 
   updateVectors();
-  view = glm::lookAt(mPosition,                // position vector
+  view = oglm::lookAt(mPosition,                // position vector
                      mPosition + mFrontVector, // target position vector
                      mUpVector);                // up vector
 
@@ -67,19 +65,19 @@ glm::mat4 Camera::getViewMatrix() {
 }
 
 void Camera::updateVectors() {
-  mFrontVector = glm::vec3(cos(mYaw) * cos(mPitch), sin(mPitch), sin(mYaw) * cos(mPitch));
+  mFrontVector = oglm::vec3(cos(mYaw) * cos(mPitch), sin(mPitch), sin(mYaw) * cos(mPitch));
   int flip = mFlipped ? -1 : 1;
-  mFrontVector = glm::vec3(flip) * glm::normalize(mFrontVector);
+  mFrontVector = oglm::vec3(flip) * oglm::normalize(mFrontVector);
 
-  mRightVector = glm::normalize(glm::cross(mFrontVector, mWorldUp));
-  mUpVector = glm::normalize(glm::cross(mRightVector, mFrontVector));
+  mRightVector = oglm::normalize(oglm::cross(mFrontVector, mWorldUp));
+  mUpVector = oglm::normalize(oglm::cross(mRightVector, mFrontVector));
 }
 
-glm::vec3 Camera::getPosition() const {
+oglm::vec3 Camera::getPosition() const {
   return mPosition;
 }
 
-glm::vec3 Camera::getFrontVector() {
+oglm::vec3 Camera::getFrontVector() {
   updateVectors();
   
   return mFrontVector;

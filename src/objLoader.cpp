@@ -33,9 +33,9 @@ bool ObjLoader::loadObj(const std::string objPath, Model &model) {
 
 // returns true on successful object load
 bool ObjLoader::loadObj(std::ifstream *fileStream, const std::string &directory, Model &model) {
-  std::vector<glm::vec3> positions;
-  std::vector<glm::vec3> normals;
-  std::vector<glm::vec2> textureCoords;
+  std::vector<oglm::vec3> positions;
+  std::vector<oglm::vec3> normals;
+  std::vector<oglm::vec2> textureCoords;
   std::vector<Face> faces;
   std::vector<TextureMTL> texturesMTL;
   std::vector<Texture> textures;
@@ -68,7 +68,7 @@ bool ObjLoader::loadObj(std::ifstream *fileStream, const std::string &directory,
     if(line[0] == 'v' && (line[1] == ' ' || line[1] == '\t')) {
       line.erase(0, 2);
       
-      glm::vec3 vertex = get3f(line);
+      oglm::vec3 vertex = get3f(line);
       positions.push_back(vertex);
       continue;
     }
@@ -77,7 +77,7 @@ bool ObjLoader::loadObj(std::ifstream *fileStream, const std::string &directory,
     if(line[0] == 'v' && line[1] == 'n' && (line[2] == ' ' || line[2] == '\t')) {
       line.erase(0, 3);
 
-      glm::vec3 vertexNormal = get3f(line);
+      oglm::vec3 vertexNormal = get3f(line);
       normals.push_back(vertexNormal);
       continue;
     }
@@ -86,7 +86,7 @@ bool ObjLoader::loadObj(std::ifstream *fileStream, const std::string &directory,
     if(line[0] == 'v' && line[1] == 't' && (line[2] == ' ' || line[2] == '\t')) {
       line.erase(0, 3);
 
-      glm::vec2 textureCoord = get2f(line);
+      oglm::vec2 textureCoord = get2f(line);
       textureCoords.push_back(textureCoord);
       continue;
     }
@@ -152,8 +152,8 @@ bool ObjLoader::loadObj(std::ifstream *fileStream, const std::string &directory,
 }
 
 // adds a mesh to the model being loaded
-void ObjLoader::addMesh(std::vector<glm::vec3> &positions, std::vector<glm::vec3> &normals,
-                        std::vector<glm::vec2> &textureCoords, std::vector<Face> &faces, Model &model,
+void ObjLoader::addMesh(std::vector<oglm::vec3> &positions, std::vector<oglm::vec3> &normals,
+                        std::vector<oglm::vec2> &textureCoords, std::vector<Face> &faces, Model &model,
                         Material &material, std::vector<Texture> &textures) {
   if((positions.empty() && normals.empty() && textureCoords.empty()) || faces.empty()) return;
   
@@ -241,8 +241,8 @@ int ObjLoader::getOneIndex(std::string &string, int &endIndex) {
 }
 
 // gets 3 floats from string
-glm::vec3 ObjLoader::get3f(std::string &string) {
-  glm::vec3 floats;
+oglm::vec3 ObjLoader::get3f(std::string &string) {
+  oglm::vec3 floats;
 
   floats.x = get1f(string);
   floats.y = get1f(string);
@@ -251,8 +251,8 @@ glm::vec3 ObjLoader::get3f(std::string &string) {
 }
 
 // gets 2 floats from string
-glm::vec2 ObjLoader::get2f(std::string &string) {
-  glm::vec2 floats;
+oglm::vec2 ObjLoader::get2f(std::string &string) {
+  oglm::vec2 floats;
 
   floats.x = get1f(string);
   floats.y = get1f(string);

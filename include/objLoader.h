@@ -1,5 +1,5 @@
 #pragma once
-#include <glm/glm.hpp>
+#include <openglMaths.h>
 #include <vector>
 #include <string>
 #include <model.h>
@@ -14,8 +14,8 @@ class ObjLoader {
     std::vector<TextureMTL>  openMTL(std::string &string, const std::string &directory);
     std::vector<TextureMTL>  readMTL(std::ifstream *fileStream, const std::string &directory);
 
-    void addMesh(std::vector<glm::vec3> &positions, std::vector<glm::vec3> &normals,
-                 std::vector<glm::vec2> &textureCoords, std::vector<Face> &faces, Model &model,
+    void addMesh(std::vector<oglm::vec3> &positions, std::vector<oglm::vec3> &normals,
+                 std::vector<oglm::vec2> &textureCoords, std::vector<Face> &faces, Model &model,
                  Material &material, std::vector<Texture> &textures);
     
     int getOneIndex(std::string &string, int &endIndex);
@@ -23,8 +23,8 @@ class ObjLoader {
     Face getFace(std::string &string);
 
     float get1f(std::string &string);
-    glm::vec2 get2f(std::string &string);
-    glm::vec3 get3f(std::string &string);
+    oglm::vec2 get2f(std::string &string);
+    oglm::vec3 get3f(std::string &string);
   public:
     ObjLoader();
 

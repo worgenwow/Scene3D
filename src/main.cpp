@@ -1,9 +1,5 @@
 #include <GL/glew.h>
 #include <GL/freeglut.h>
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
-#include <glm/gtx/norm.hpp>
 
 #include <stdio.h>
 #include <stdarg.h>
@@ -12,9 +8,10 @@
 #include <vector>
 #include <imageLoader.h>
 
+#include <openglMaths.h>
 #include <model.h>
 #include <objLoader.h>
-#include <lights.h>
+#include <light_structs.h>
 #include <shader.h>
 #include <data_struct.h>
 
@@ -73,8 +70,10 @@ void loadObjects(Data *d);
 // loads a cubemap image based on vector of paths
 GLuint loadCubemap(std::vector<std::string> faces);
 
+// creates the skybox VAO
 GLuint createSkybox();
 
+// sets up the uniform buffers for passing variables to multiple shaders
 void setupUBO(Data *d);
 
 int main(int argc, char **argv) {
@@ -86,6 +85,7 @@ int main(int argc, char **argv) {
   setGlutCallbacks(&data);
   setupUBO(&data);
   genFramebuffer(data.framebuffers[0], data.textureColorBuffers[0], data.RBOs[0]);
+
   std::vector<std::string> faces{
     "./images/skybox/right.jpg",
     "./images/skybox/left.jpg",
@@ -97,10 +97,11 @@ int main(int argc, char **argv) {
   data.cubemap = loadCubemap(faces);
   data.skyboxVAO = createSkybox();
 
-  // glEnable(GL_DEPTH_TEST);
+  glEnable(GL_DEPTH_TEST);
+  glEnable(GL_CULL_FACE);
   // glEnable(GL_BLEND);
   // glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-  glEnable(GL_CULL_FACE);
+  
 
   glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_GLUTMAINLOOP_RETURNS);
 
@@ -149,14 +150,48 @@ void render(void *data) {
 
 void renderScene(Data *d, int shaderIndex) {
   // get the view matrix
-  glm::mat4 view = d->camera.getViewMatrix();
+  oglm::mat4 view = d->camera.getViewMatrix();
 
   glBindBuffer(GL_UNIFORM_BUFFER, d->matricesUBO);
-  glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4), sizeof(glm::mat4), glm::value_ptr(view));
+  glBufferSubData(GL_UNIFORM_BUFFER, sizeof(oglm::mat4), sizeof(oglm::mat4), &view.columns[0].x); // @TODO verify
   glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
-  glm::mat4 skyboxView = glm::mat4(glm::mat3(view));
-  glm::vec3 viewPos = d->camera.getPosition();
+  oglm::mat4 skyboxView = oglm::mat4(oglm::mat3(view));
+  oglm::vec3 viewPos = d->camera.getPosition();
+
+  // oglm::mat4 planeModel = oglm::mat4(1.0f);
+  // oglm::mat3 planeNormalMat = oglm::transpose(oglm::inverse(oglm::mat3(planeModel)));
+  // d->shaders[d->SCENE]->setMat4("model", planeModel);
+  // d->shaders[d->SCENE]->setMat3("normalMatrix", planeNormalMat);
+  // d->plane.draw(d->shaders[d->SCENE]);  
+
+  // set all the uniform variables for the object
+  d->shaders[shaderIndex]->use();
+  d->shaders[shaderIndex]->setVec3("viewPos", viewPos);
+  
+  oglm::mat4 model = oglm::mat4(1.0f);
+
+  // calculate the normal matrix for correcting normal vector after any transformations
+  oglm::mat3 normalMatrix;
+  if(shaderIndex == d->NORMALS_DEBUG) {
+    normalMatrix = oglm::transpose(oglm::inverse(oglm::mat3(view * model)));
+  } else {
+    normalMatrix = oglm::transpose(oglm::inverse(oglm::mat3(model)));
+  }
+  d->shaders[shaderIndex]->setMat4("model", model);
+  d->shaders[shaderIndex]->setMat3("normalMatrix", normalMatrix);
+
+  // draw the objects
+  d->cube.drawInstanced(d->shaders[shaderIndex], 2000);
+
+  oglm::mat4 backpackModel = oglm::mat4(1.0f);
+  backpackModel = oglm::translate(backpackModel, oglm::vec3(0,-0.13f,0));
+  backpackModel = oglm::rotate(backpackModel, oglm::radians(90.0f), oglm::vec3(0.0f, 1.0f, 0.0f));
+  backpackModel = oglm::scale(backpackModel, oglm::vec3(0.2f));
+  oglm::mat3 bpNormalMatrix = oglm::transpose(oglm::inverse(oglm::mat3(backpackModel)));
+  d->shaders[shaderIndex]->setMat4("model", backpackModel);
+  d->shaders[shaderIndex]->setMat3("normalMatrix", bpNormalMatrix);
+  d->backpack.draw(d->shaders[shaderIndex]);
 
   glDepthFunc(GL_LEQUAL);
   d->shaders[d->SKYBOX]->use();
@@ -166,60 +201,17 @@ void renderScene(Data *d, int shaderIndex) {
   glBindTexture(GL_TEXTURE_CUBE_MAP, d->cubemap);
   glDrawArrays(GL_TRIANGLES, 0, 36);
   glDepthFunc(GL_LESS);
-
-  // set all the uniform variables for the object
-  d->shaders[shaderIndex]->use();
-
-  // glm::mat4 planeModel = glm::mat4(1.0f);
-  // glm::mat3 planeNormalMat = glm::transpose(glm::inverse(glm::mat3(planeModel)));
-  // d->shaders[d->SCENE]->setMat4("model", planeModel);
-  // d->shaders[d->SCENE]->setMat3("normalMatrix", planeNormalMat);
-  // d->plane.draw(d->shaders[d->SCENE]);
-
-  glBindTexture(GL_TEXTURE_CUBE_MAP, d->cubemap);
-  d->shaders[shaderIndex]->setVec3("viewPos", viewPos);
-  glm::vec3 cubePositions[] = {
-    glm::vec3(-1.0f, 0.0f, -1.0f),
-    glm::vec3(4.0f, 0.0f, 0.0f)
-  };
-  
-  // draw the objects
-  for(unsigned int i=0;i<2;i++) {
-    glm::mat4 model = glm::mat4(1.0f);
-    model = glm::translate(model, cubePositions[i]);
-
-    // calculate the normal matrix for correcting normal vector after any transformations
-    glm::mat3 normalMatrix;
-    if(shaderIndex == d->NORMALS_DEBUG) {
-      normalMatrix = glm::transpose(glm::inverse(glm::mat3(view * model)));
-    } else {
-      normalMatrix = glm::transpose(glm::inverse(glm::mat3(model)));
-    }
-
-    d->shaders[shaderIndex]->setMat4("model", model);
-    d->shaders[shaderIndex]->setMat3("normalMatrix", normalMatrix);
-    d->cube.draw(d->shaders[shaderIndex]);
-  }
-
-  // glm::mat4 model = glm::mat4(1.0f);
-  // model = glm::translate(model, glm::vec3(0,-0.13f,0));
-  // model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-  // model = glm::scale(model, glm::vec3(0.2f));
-  // glm::mat3 normalMatrix = glm::transpose(glm::inverse(glm::mat3(model)));
-  // d->shaders[d->SCENE]->setMat4("model", model);
-  // d->shaders[d->SCENE]->setMat3("normalMatrix", normalMatrix);
-  // d->backpack.draw(d->shaders[d->SCENE]);
 }
 
 void setupUBO(Data *d) {
   glGenBuffers(1, &d->matricesUBO);
   glBindBuffer(GL_UNIFORM_BUFFER, d->matricesUBO);
   // allocate memory to buffer
-  glBufferData(GL_UNIFORM_BUFFER, 2 * sizeof(glm::mat4), NULL, GL_STATIC_DRAW);
+  glBufferData(GL_UNIFORM_BUFFER, 2 * sizeof(oglm::mat4), NULL, GL_STATIC_DRAW);
   glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
   // bind buffer to binding point 0
-  glBindBufferRange(GL_UNIFORM_BUFFER, 0, d->matricesUBO, 0, 2 * sizeof(glm::mat4));
+  glBindBufferRange(GL_UNIFORM_BUFFER, 0, d->matricesUBO, 0, 2 * sizeof(oglm::mat4));
 }
 
 void genFramebuffer(GLuint &framebuffer, GLuint &textureColorBuffer, GLuint &RBO) {
@@ -287,7 +279,7 @@ void initialiseGLUT(int argc, char **argv) {
   glutInitWindowPosition(-1, -1);
   glutInitWindowSize(800, 600);
   glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH);
-  glutCreateWindow("Test");
+  glutCreateWindow("3D Scene");
 
   // intialises GLEW
   glewExperimental = GL_FALSE; 
@@ -305,7 +297,7 @@ void idle(void *data) {
 
   d->camera.updatePos(&d->keyData, deltaTime);
   d->camera.updateAngle(&d->mouseChange, deltaTime);
-  d->mouseChange = glm::vec2(0,0);
+  d->mouseChange = oglm::vec2(0,0);
 
   d->previousTime = glutGet(GLUT_ELAPSED_TIME);
 
@@ -346,9 +338,9 @@ void changeSize(int w, int h, void *data) {
   d->screenWidth  = w;
 
   glViewport(0, 0, w, h); // sets viewport to be entire window
-  d->proj = glm::perspective(glm::radians(45.f), ratio, 0.1f, 100.0f); // sets the perspective
+  d->proj = oglm::perspective(oglm::radians(45.f), ratio, 0.1f, 100.0f); // sets the perspective
   glBindBuffer(GL_UNIFORM_BUFFER, d->matricesUBO);
-  glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(glm::mat4), glm::value_ptr(d->proj));
+  glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(oglm::mat4), &d->proj.columns[0].x); // @TODO verify
   glBindBuffer(GL_UNIFORM_BUFFER, 0);
 }
 
@@ -394,7 +386,7 @@ void specialKeyDown(int key, int x, int y, void *data) {
 void mouseMovement(int x, int y, void *data) {
   Data *d = static_cast<Data *>(data);
   if(d->mouse1Down) {
-    d->mouseChange = glm::vec2(x - d->screenWidth/2, y - d->screenHeight/2);
+    d->mouseChange = oglm::vec2(x - d->screenWidth/2, y - d->screenHeight/2);
 
     glutWarpPointer(d->screenWidth/2, d->screenHeight/2);
   }
@@ -412,7 +404,7 @@ void mouseClick(int button, int state, int x, int y, void *data) {
 }
 
 void createShaders(Data *d) {
-  d->shaders[d->SCENE] = new Shader("./shaders/object.vs", "./shaders/reflection.fs");
+  d->shaders[d->SCENE] = new Shader("./shaders/instanced.vs", "./shaders/simple.fs");
   d->shaders[d->VIEW_QUAD] = new Shader("./shaders/view_quad.vs", "./shaders/post_processing.fs");
   d->shaders[d->SKYBOX] = new Shader("./shaders/skybox.vs", "./shaders/skybox.fs");
   d->shaders[d->NORMALS_DEBUG] = new Shader("./shaders/debug_normals.vs", "./shaders/debug_normals.fs",
@@ -428,7 +420,19 @@ void loadObjects(Data *d) {
   loader.loadObj("./objects/plane/plane.obj", d->plane);
   loader.loadObj("./objects/cube/cube.obj", d->cube);
   loader.loadObj("./objects/quad/quad.obj", d->quad);
-  // loader.loadObj("./objects/backpack/backpack.obj", d->backpack);
+  loader.loadObj("./objects/backpack/backpack.obj", d->backpack);
+
+  unsigned int amount = 2000;
+  oglm::vec3 cubePositions[amount];
+  float divisor = 100/(2*M_PI);
+  float multiplier = 3 + divisor;
+  for (int j = 0; j < 20; j++) {
+    for (unsigned int i = 0; i < 100; i++) {
+      cubePositions[i+(100*j)] = oglm::vec3(multiplier * sin(i/divisor), j-10, multiplier * cos(i/divisor));
+    }
+  }
+  
+  d->cube.enableInstancing(cubePositions, amount);
 }
 
 GLuint loadCubemap(std::vector<std::string> faces) {

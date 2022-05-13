@@ -1,10 +1,10 @@
 #pragma once
-#include <glm/glm.hpp>
+#include <openglMaths.h>
 
 struct LightProps {
-  glm::vec3 ambient;
-  glm::vec3 diffuse;
-  glm::vec3 specular;
+  oglm::vec3 ambient;
+  oglm::vec3 diffuse;
+  oglm::vec3 specular;
 };
 
 // variables that handle light attenuation
@@ -15,8 +15,8 @@ struct LightDropOff {
 };
 
 struct Spotlight {
-  glm::vec3 position;
-  glm::vec3 direction;
+  oglm::vec3 position;
+  oglm::vec3 direction;
 
   // cos of angle where outside light starts to dim
   float cutOff;
@@ -28,13 +28,13 @@ struct Spotlight {
 };
 
 struct DirLight {
-  glm::vec3 direction;
+  oglm::vec3 direction;
 
   LightProps lightProps;
 };
 
 struct PointLight {
-  glm::vec3 position;
+  oglm::vec3 position;
 
   LightDropOff lightDropOff;
   LightProps lightProps;

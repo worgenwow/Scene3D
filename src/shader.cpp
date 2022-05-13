@@ -5,9 +5,6 @@
 #include <sstream>
 #include <iostream>
 
-#include <glm/glm.hpp>
-#include <glm/gtc/type_ptr.hpp>
-
 void Shader::printShaderLog(GLuint shader) const {
 	if(glIsShader(shader)) {
 		// shader log length
@@ -194,24 +191,24 @@ void Shader::setFloat(const GLchar *name, float value) const {
   glUniform1f(glGetUniformLocation(mID, name), value);
 }
 
-void Shader::setMat3(const GLchar *name, glm::mat3 &value) const {
-  glUniformMatrix3fv(glGetUniformLocation(mID, name), 1, GL_FALSE, glm::value_ptr(value));
+void Shader::setMat3(const GLchar *name, oglm::mat3 &value) const {
+  glUniformMatrix3fv(glGetUniformLocation(mID, name), 1, GL_FALSE, &value.columns[0].x);
 }
 
-void Shader::setMat4(const GLchar *name, glm::mat4 &value) const {
-  glUniformMatrix4fv(glGetUniformLocation(mID, name), 1, GL_FALSE, glm::value_ptr(value));
+void Shader::setMat4(const GLchar *name, oglm::mat4 &value) const {
+  glUniformMatrix4fv(glGetUniformLocation(mID, name), 1, GL_FALSE, &value.columns[0].x);
 }
 
-void Shader::setVec3(const GLchar *name, glm::vec3 &value) const {
-  glUniform3fv(glGetUniformLocation(mID, name), 1, &value[0]);
+void Shader::setVec3(const GLchar *name, oglm::vec3 &value) const {
+  glUniform3fv(glGetUniformLocation(mID, name), 1, &value.x);
 }
 
 void Shader::setVec3(const GLchar *name, float x, float y, float z) const {
   glUniform3f(glGetUniformLocation(mID, name), x, y, z);
 }
 
-void Shader::setVec4(const GLchar *name, glm::vec4 &value) const {
-  glUniform4fv(glGetUniformLocation(mID, name), 1, &value[0]);
+void Shader::setVec4(const GLchar *name, oglm::vec4 &value) const {
+  glUniform4fv(glGetUniformLocation(mID, name), 1, &value.x);
 }
 
 void Shader::setLightDropOff(const GLchar *name, LightDropOff &value) const {

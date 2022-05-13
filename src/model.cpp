@@ -7,10 +7,24 @@ void Model::addMesh(Mesh mesh) {
   meshes.push_back(mesh);
 }
 
+void Model::enableInstancing(oglm::vec3 *array, unsigned int arraySize) {
+  for(std::vector<Mesh>::iterator it = meshes.begin();
+      it != meshes.end(); ++it) {
+    it->enableInstancing(array, arraySize);
+  }
+}
+
 void Model::draw(Shader *shader) {
   for(std::vector<Mesh>::iterator it = meshes.begin();
       it != meshes.end(); ++it) {
     it->draw(shader);
+  }
+}
+
+void Model::drawInstanced(Shader *shader, unsigned int amount) {
+  for(std::vector<Mesh>::iterator it = meshes.begin();
+      it != meshes.end(); ++it) {
+    it->drawInstanced(shader, amount);
   }
 }
 

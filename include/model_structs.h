@@ -1,12 +1,12 @@
 #pragma once
-#include <glm/glm.hpp>
+#include <openglMaths.h>
 #include <GL/glew.h>
 #include <string>
 
 struct Vertex {
-  glm::vec3 position;
-  glm::vec3 normal;
-  glm::vec2 textureCoords;
+  oglm::vec3 position;
+  oglm::vec3 normal;
+  oglm::vec2 textureCoords;
 };
 
 struct Texture {

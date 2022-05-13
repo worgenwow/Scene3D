@@ -48,7 +48,23 @@ void Mesh::setupMesh() {
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 
-void Mesh::draw(Shader *shader) {
+void Mesh::enableInstancing(oglm::vec3 *array, unsigned int arraySize) {
+  glGenBuffers(1, &mInstanceVBO);
+
+  glBindVertexArray(mVAO);
+
+  glBindBuffer(GL_ARRAY_BUFFER, mInstanceVBO);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(oglm::vec3) * arraySize, array, GL_STATIC_DRAW);
+
+  glEnableVertexAttribArray(3);
+  glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+  glVertexAttribDivisor(3, 1);
+
+  glBindBuffer(GL_ARRAY_BUFFER, 0);
+  glBindVertexArray(0);
+}
+
+void Mesh::enableTextures(Shader *shader) {
   // textures have type texture_typeN, diffuseNr and specularNr are N for respective types
   unsigned int diffuseNr = 1;
   unsigned int specularNr = 1;
@@ -69,9 +85,22 @@ void Mesh::draw(Shader *shader) {
   // rebind default texture unit
   glActiveTexture(GL_TEXTURE0);
   shader->setFloat("material.specularExponent", mMaterial.specularExponent);
+}
+
+void Mesh::draw(Shader *shader) {
+  enableTextures(shader);
+
   // draw mesh
   glBindVertexArray(mVAO);
   glDrawElements(GL_TRIANGLES, mIndices.size(), GL_UNSIGNED_INT, 0);
+  glBindVertexArray(0);
+}
+
+void Mesh::drawInstanced(Shader *shader, unsigned int amount) {
+  enableTextures(shader);
+
+  glBindVertexArray(mVAO);
+  glDrawElementsInstanced(GL_TRIANGLES, mIndices.size(), GL_UNSIGNED_INT, 0, amount);
   glBindVertexArray(0);
 }
 

@@ -46,13 +46,13 @@ std::vector<Texture> Model::loadTextures(TextureMTL &textureMTL) {
   }
 
   if(!diffuseLoaded) {
-    Texture diffuse = textureFromFile(textureMTL.diffusePath);
+    Texture diffuse = textureFromFile(textureMTL.diffusePath, true);
     diffuse.type = "texture_diffuse";
     textures.push_back(diffuse);
     loadedTextures.push_back(diffuse);
   }
   if(!specularLoaded) {
-    Texture specular = textureFromFile(textureMTL.specularPath);
+    Texture specular = textureFromFile(textureMTL.specularPath, false);
     specular.type = "texture_specular";
     textures.push_back(specular);
     loadedTextures.push_back(specular);
@@ -61,18 +61,21 @@ std::vector<Texture> Model::loadTextures(TextureMTL &textureMTL) {
   return textures;
 }
 
-Texture Model::textureFromFile(const std::string &path) {
+Texture Model::textureFromFile(const std::string &path, bool gammaCorrect) {
   Texture texture;
   texture.path = path;
 
   int width, height, nrChannels;
   unsigned char *data = ImageLoader::loadImage(path.c_str(), &width, &height, &nrChannels);
 
-  GLenum format;
+  GLenum inputFormat;
+  GLenum outputFormat;
   if(nrChannels == 3) {
-    format = GL_RGB;
+    inputFormat = GL_RGB;
+    outputFormat = gammaCorrect ? GL_SRGB : GL_RGB;
   } else if(nrChannels == 4) {
-    format = GL_RGBA;
+    inputFormat = GL_RGBA;
+    outputFormat = gammaCorrect ? GL_SRGB_ALPHA : GL_RGBA;
   }
 
   if(data) {
@@ -85,7 +88,7 @@ Texture Model::textureFromFile(const std::string &path) {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-    glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+    glTexImage2D(GL_TEXTURE_2D, 0, outputFormat, width, height, 0, inputFormat, GL_UNSIGNED_BYTE, data);
     glGenerateMipmap(GL_TEXTURE_2D);
   } else {
     printf("Failed to load texture");

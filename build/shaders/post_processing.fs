@@ -35,7 +35,11 @@ void main() {
   for(int i = 0; i < 9; i++)
     col += sampleTex[i] * sharpenKernel[i];
   
-  // FragColor = vec4(0,(col.r+col.g+col.b)/3, 0, 1.0);
-  FragColor = texture(screenTexture, TexCoords);
-  // FragColor = vec4(col, 1.0);
+  // vec3 finalColor = vec3(0,(col.r+col.g+col.b)/3, 0);
+  vec3 finalColor = vec3(texture(screenTexture, TexCoords));
+  // vec3 finalColor = col;
+
+  // add gamma correction
+  float gamma = 2.2;
+  FragColor = vec4(pow(finalColor, vec3(1.0/gamma)), 1.0);
 }

@@ -76,6 +76,9 @@ GLuint createSkybox();
 // sets up the uniform buffers for passing variables to multiple shaders
 void setupUBO(Data *d);
 
+// calculate the normal matrix for correcting normal vector after any transformations
+oglm::mat3 calcNormalMatrix(oglm::mat4 model, oglm::mat4 view, bool debugNormals);
+
 int main(int argc, char **argv) {
   initialiseGLUT(argc, argv);
 
@@ -126,17 +129,18 @@ void render(void *data) {
   // clear the buffer
   glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
   renderScene(d, d->SCENE);
   // renderScene(d, d->NORMALS_DEBUG);
 
   // bind the default framebuffer
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
   glDisable(GL_DEPTH_TEST);
+  glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
   glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT);
-
-  glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+  
   // draw the framebuffer texture to a quad
   d->shaders[d->VIEW_QUAD]->use();
   glActiveTexture(GL_TEXTURE0);
@@ -153,46 +157,46 @@ void renderScene(Data *d, int shaderIndex) {
   oglm::mat4 view = d->camera.getViewMatrix();
 
   glBindBuffer(GL_UNIFORM_BUFFER, d->matricesUBO);
-  glBufferSubData(GL_UNIFORM_BUFFER, sizeof(oglm::mat4), sizeof(oglm::mat4), &view.columns[0].x); // @TODO verify
+  glBufferSubData(GL_UNIFORM_BUFFER, sizeof(oglm::mat4), sizeof(oglm::mat4), &view.columns[0].x);
   glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
   oglm::mat4 skyboxView = oglm::mat4(oglm::mat3(view));
   oglm::vec3 viewPos = d->camera.getPosition();
-
-  // oglm::mat4 planeModel = oglm::mat4(1.0f);
-  // oglm::mat3 planeNormalMat = oglm::transpose(oglm::inverse(oglm::mat3(planeModel)));
-  // d->shaders[d->SCENE]->setMat4("model", planeModel);
-  // d->shaders[d->SCENE]->setMat3("normalMatrix", planeNormalMat);
-  // d->plane.draw(d->shaders[d->SCENE]);  
+  bool debugNormals = (shaderIndex == d->NORMALS_DEBUG);
 
   // set all the uniform variables for the object
   d->shaders[shaderIndex]->use();
   d->shaders[shaderIndex]->setVec3("viewPos", viewPos);
-  
-  oglm::mat4 model = oglm::mat4(1.0f);
 
-  // calculate the normal matrix for correcting normal vector after any transformations
-  oglm::mat3 normalMatrix;
-  if(shaderIndex == d->NORMALS_DEBUG) {
-    normalMatrix = oglm::transpose(oglm::inverse(oglm::mat3(view * model)));
-  } else {
-    normalMatrix = oglm::transpose(oglm::inverse(oglm::mat3(model)));
-  }
-  d->shaders[shaderIndex]->setMat4("model", model);
+  // draws the plane
+  oglm::mat4 planeModel = oglm::mat4(1.0f);
+  oglm::mat3 planeNormalMat = calcNormalMatrix(planeModel, view, debugNormals);
+  d->shaders[shaderIndex]->setMat4("model", planeModel);
+  d->shaders[shaderIndex]->setMat3("normalMatrix", planeNormalMat);
+  d->plane.draw(d->shaders[shaderIndex]);  
+  
+  // draws the cubes
+  oglm::mat4 cubeModel = oglm::mat4(1.0f);
+  oglm::mat3 normalMatrix = calcNormalMatrix(cubeModel, view, debugNormals);
+  d->shaders[shaderIndex]->setMat4("model", cubeModel);
   d->shaders[shaderIndex]->setMat3("normalMatrix", normalMatrix);
 
   // draw the objects
   d->cube.drawInstanced(d->shaders[shaderIndex], 2000);
 
+  // backpack transformations
   oglm::mat4 backpackModel = oglm::mat4(1.0f);
   backpackModel = oglm::translate(backpackModel, oglm::vec3(0,-0.13f,0));
   backpackModel = oglm::rotate(backpackModel, oglm::radians(90.0f), oglm::vec3(0.0f, 1.0f, 0.0f));
   backpackModel = oglm::scale(backpackModel, oglm::vec3(0.2f));
-  oglm::mat3 bpNormalMatrix = oglm::transpose(oglm::inverse(oglm::mat3(backpackModel)));
+
+  // draws the backpack
+  oglm::mat3 bpNormalMatrix = calcNormalMatrix(backpackModel, view, debugNormals);
   d->shaders[shaderIndex]->setMat4("model", backpackModel);
   d->shaders[shaderIndex]->setMat3("normalMatrix", bpNormalMatrix);
   d->backpack.draw(d->shaders[shaderIndex]);
 
+  // draws the skybox
   glDepthFunc(GL_LEQUAL);
   d->shaders[d->SKYBOX]->use();
   d->shaders[d->SKYBOX]->setMat4("projection", d->proj);
@@ -340,7 +344,7 @@ void changeSize(int w, int h, void *data) {
   glViewport(0, 0, w, h); // sets viewport to be entire window
   d->proj = oglm::perspective(oglm::radians(45.f), ratio, 0.1f, 100.0f); // sets the perspective
   glBindBuffer(GL_UNIFORM_BUFFER, d->matricesUBO);
-  glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(oglm::mat4), &d->proj.columns[0].x); // @TODO verify
+  glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(oglm::mat4), &d->proj.columns[0].x);
   glBindBuffer(GL_UNIFORM_BUFFER, 0);
 }
 
@@ -521,4 +525,15 @@ GLuint createSkybox() {
   glBindBuffer(GL_ARRAY_BUFFER, 0);
   glBindVertexArray(0);
   return VAO;
+}
+
+oglm::mat3 calcNormalMatrix(oglm::mat4 model, oglm::mat4 view, bool debugNormals) {
+  oglm::mat3 normalMatrix;
+
+  if(debugNormals) {
+    normalMatrix = oglm::transpose(oglm::inverse(oglm::mat3(model * view)));
+  } else {
+    normalMatrix = oglm::transpose(oglm::inverse(oglm::mat3(model)));
+  }
+  return normalMatrix;
 }

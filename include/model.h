@@ -9,7 +9,7 @@ class Model {
     std::vector<Mesh> meshes;
     std::vector<Texture> loadedTextures;
 
-    Texture textureFromFile(const std::string &path);
+    Texture textureFromFile(const std::string &path, bool gammaCorrect);
   public:
     Model();
 
